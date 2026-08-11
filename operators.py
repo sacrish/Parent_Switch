@@ -4,7 +4,7 @@ import bpy
 from bpy.props import BoolProperty, StringProperty
 from bpy.types import Operator
 
-from . import core
+from . import core, preferences
 
 
 def _settings(context):
@@ -76,6 +76,7 @@ class PARENTSWITCH_OT_switch(Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     constraint_name: StringProperty(options={"HIDDEN"})
+    disable_all: BoolProperty(default=False, options={"HIDDEN"})
     insert_keyframe: BoolProperty(default=False, options={"HIDDEN"})
 
     @classmethod
@@ -90,15 +91,24 @@ class PARENTSWITCH_OT_switch(Operator):
                 context,
                 owner,
                 self.constraint_name,
+                disable_all=self.disable_all,
                 keyframe=self.insert_keyframe,
                 frame=context.scene.frame_current,
                 keep_transform=settings.keep_transform,
+                skip_guard_at_scene_start=(
+                    preferences.should_skip_guard_at_scene_start(context)
+                ),
             )
         except (ValueError, RuntimeError, TypeError) as exc:
             self.report({"ERROR"}, str(exc))
             return {"CANCELLED"}
 
-        action = "Switched parent and inserted keys" if self.insert_keyframe else "Switched parent"
+        if self.disable_all:
+            action = "Disabled all Child Of constraints"
+            if self.insert_keyframe:
+                action += " and inserted keys"
+        else:
+            action = "Switched parent and inserted keys" if self.insert_keyframe else "Switched parent"
         if settings.keep_transform:
             action += " with transform preserved"
         self.report({"INFO"}, f"{action} at frame {context.scene.frame_current}")

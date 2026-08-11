@@ -3,17 +3,17 @@
 bl_info = {
     "name": "Parent Switch",
     "author": "Parent Switch Contributors",
-    "version": (1, 1, 1),
+    "version": (1, 1, 3),
     "blender": (4, 2, 0),
     "location": "3D Viewport > Sidebar > Item > Parent Switch",
     "description": "Create and switch between multiple Child Of constraints",
     "category": "Animation",
 }
 
-from . import operators, properties, ui
+from . import operators, preferences, properties, ui
 
 
-MODULES = (properties, operators, ui)
+MODULES = (properties, preferences, operators, ui)
 
 
 def register():

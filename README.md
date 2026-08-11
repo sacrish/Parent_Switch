@@ -4,6 +4,17 @@ Parent Switch is a Blender add-on for creating several disabled **Child Of**
 constraints on an object or pose bone, then switching and keying those parents
 from one compact panel.
 
+## Highlights
+
+- Set up several object or bone parents once, then reuse them throughout an animation.
+- Add many bones quickly with **Bones Only** mode.
+- Use **Set** for posing or **Key** for animation.
+- Key the real constraint Enable/Disable (eye) state, not a hidden proxy value.
+- Preserve the visual pose with **Keep Transform**.
+- Prevent pre-switch drift with automatic constant guard keys.
+- Switch to **None** to return to the object's real parent or world space.
+- Stay in Blender's existing **Item** tab; no extra N-Panel tab is added.
+
 ## Compatibility
 
 Blender 4.2 and newer
@@ -33,12 +44,14 @@ cleared after successful creation.
 
 ## Switch Parents
 
-The panel automatically shows every Child Of constraint belonging to the active
-object or active pose bone.
+The panel shows every Child Of constraint belonging to the active object or
+pose bone, plus a permanent **None** entry at the bottom.
 
 - **Set** enables that constraint and disables the other Child Of constraints.
 - **Key** performs Set and inserts a keyframe on every Child Of constraint's
   header Enable/Disable (eye) state at the current frame.
+- **None** disables all Child Of constraints. Its Set and Key buttons work like
+  those of any other parent.
 - **Keep Transform** preserves the active object or pose bone's visual
   location, rotation, and scale while switching. With **Key**, those transform
   channels are keyed as well so the no-jump result plays back correctly.
@@ -47,5 +60,12 @@ object or active pose bone.
 old-space transform are held with constant outgoing interpolation until the
 switch frame, preventing the new local transform from interpolating backward
 into the preceding animation.
+
+## Preferences
+
+**Skip Guard Key at Scene Start** is enabled by default. When Key is used on
+the first scene frame, Parent Switch writes only the current-frame keys and does
+not extend the animation clip with an extra earlier frame. Disable this option
+in Blender Preferences to always create guard keys.
 
 Other constraint types are never modified.

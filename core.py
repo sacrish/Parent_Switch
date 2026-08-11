@@ -283,19 +283,26 @@ def switch_child_of(
     owner,
     constraint_name,
     *,
+    disable_all=False,
     keyframe=False,
     frame=None,
     keep_transform=False,
+    skip_guard_at_scene_start=True,
 ):
     constraints = child_of_constraints(owner)
-    selected = next((c for c in constraints if c.name == constraint_name), None)
-    if selected is None:
+    selected = None
+    if not disable_all:
+        selected = next((c for c in constraints if c.name == constraint_name), None)
+    if selected is None and not disable_all:
         raise ValueError(f"Child Of constraint '{constraint_name}' was not found")
 
     visual_matrix = evaluated_world_matrix(context, owner) if keep_transform else None
     previous_states = [(constraint, constraint.enabled) for constraint in constraints]
 
-    if keyframe:
+    insert_guard = keyframe and not (
+        skip_guard_at_scene_start and frame <= context.scene.frame_start
+    )
+    if insert_guard:
         insert_guard_keys(
             context,
             owner,
@@ -310,7 +317,7 @@ def switch_child_of(
         context.view_layer.update()
 
     for constraint in constraints:
-        constraint.enabled = constraint is selected
+        constraint.enabled = not disable_all and constraint is selected
 
     context.view_layer.update()
     if visual_matrix is not None:

@@ -33,6 +33,39 @@ def _target_icon(constraint):
     return OBJECT_ICONS.get(constraint.target.type, "OBJECT_DATA")
 
 
+def _draw_switch_card(
+    layout,
+    *,
+    label,
+    icon,
+    constraint_name="",
+    active=False,
+    disable_all=False,
+    buttons_enabled=True,
+):
+    card = layout.box()
+    card.label(text=label, icon=icon)
+
+    button_row = card.row(align=True)
+    button_row.enabled = buttons_enabled
+    set_op = button_row.operator(
+        "parent_switch.switch",
+        text="Set",
+        depress=active,
+    )
+    set_op.constraint_name = constraint_name
+    set_op.disable_all = disable_all
+    set_op.insert_keyframe = False
+    key_op = button_row.operator(
+        "parent_switch.switch",
+        text="Key",
+        icon="KEY_HLT",
+    )
+    key_op.constraint_name = constraint_name
+    key_op.disable_all = disable_all
+    key_op.insert_keyframe = True
+
+
 class PARENTSWITCH_UL_targets(UIList):
     def draw_item(
         self, context, layout, data, item, icon, active_data, active_propname, index
@@ -113,37 +146,30 @@ class PARENTSWITCH_PT_switch(Panel):
         layout = self.layout
         owner = core.active_constraint_owner(context)
         constraints = core.child_of_constraints(owner)
+        settings = _settings(context)
 
         if not constraints:
             layout.label(text="No Child Of constraints", icon="INFO")
-            return
-
-        settings = _settings(context)
-        layout.prop(settings, "keep_transform")
+        else:
+            layout.prop(settings, "keep_transform")
 
         for constraint in constraints:
-            card = layout.box()
-            title_row = card.row()
-            title_row.label(
-                text=core.target_label(constraint),
+            _draw_switch_card(
+                layout,
+                label=core.target_label(constraint),
                 icon=_target_icon(constraint),
+                constraint_name=constraint.name,
+                active=constraint.enabled,
             )
 
-            button_row = card.row(align=True)
-            set_op = button_row.operator(
-                "parent_switch.switch",
-                text="Set",
-                depress=constraint.enabled,
-            )
-            set_op.constraint_name = constraint.name
-            set_op.insert_keyframe = False
-            key_op = button_row.operator(
-                "parent_switch.switch",
-                text="Key",
-                icon="KEY_HLT",
-            )
-            key_op.constraint_name = constraint.name
-            key_op.insert_keyframe = True
+        _draw_switch_card(
+            layout,
+            label="None",
+            icon="X",
+            active=bool(constraints) and not any(c.enabled for c in constraints),
+            disable_all=True,
+            buttons_enabled=bool(constraints),
+        )
 
 
 CLASSES = (
