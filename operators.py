@@ -84,19 +84,24 @@ class PARENTSWITCH_OT_switch(Operator):
 
     def execute(self, context):
         owner = core.active_constraint_owner(context)
+        settings = _settings(context)
         try:
             core.switch_child_of(
+                context,
                 owner,
                 self.constraint_name,
                 keyframe=self.insert_keyframe,
                 frame=context.scene.frame_current,
+                keep_transform=settings.keep_transform,
             )
         except (ValueError, RuntimeError, TypeError) as exc:
             self.report({"ERROR"}, str(exc))
             return {"CANCELLED"}
 
-        action = "Switched and keyed" if self.insert_keyframe else "Switched"
-        self.report({"INFO"}, f"{action} parent at frame {context.scene.frame_current}")
+        action = "Switched parent and inserted keys" if self.insert_keyframe else "Switched parent"
+        if settings.keep_transform:
+            action += " with transform preserved"
+        self.report({"INFO"}, f"{action} at frame {context.scene.frame_current}")
         return {"FINISHED"}
 
 

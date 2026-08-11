@@ -6,12 +6,11 @@ from one compact panel.
 
 ## Compatibility
 
-- Primary target: Blender 5.2 LTS
-- Compatible extension API: Blender 4.2 and newer
+Blender 4.2 and newer
 
 ## Install
 
-1. Build or download `parent_switch-1.0.2.zip`.
+1. Download the latest version from Release section.
 2. In Blender, open **Edit > Preferences > Get Extensions**.
 3. Use the menu in the top-right and choose **Install from Disk**.
 4. Select the ZIP and enable **Parent Switch** if necessary.
@@ -40,23 +39,13 @@ object or active pose bone.
 - **Set** enables that constraint and disables the other Child Of constraints.
 - **Key** performs Set and inserts a keyframe on every Child Of constraint's
   header Enable/Disable (eye) state at the current frame.
+- **Keep Transform** preserves the active object or pose bone's visual
+  location, rotation, and scale while switching. With **Key**, those transform
+  channels are keyed as well so the no-jump result plays back correctly.
+
+**Key** also inserts guard keys one frame before the switch. The old parent and
+old-space transform are held with constant outgoing interpolation until the
+switch frame, preventing the new local transform from interpolating backward
+into the preceding animation.
 
 Other constraint types are never modified.
-
-## Uninstall behavior
-
-Draft UI state is stored on Blender's transient `WindowManager`, not in the
-`.blend` file. Disabling or uninstalling the extension unregisters its panels,
-operators, lists, and properties. Child Of constraints intentionally created by
-the user remain part of the scene, like any other scene edit.
-
-## Build from source
-
-From the repository root:
-
-```powershell
-& "C:\Program Files\Blender Foundation\Blender 5.2\blender.exe" `
-  --command extension build `
-  --source-dir ".\parent_switch_addon" `
-  --output-filepath ".\parent_switch-1.0.2.zip"
-```

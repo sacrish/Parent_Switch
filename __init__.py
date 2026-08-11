@@ -3,7 +3,7 @@
 bl_info = {
     "name": "Parent Switch",
     "author": "Parent Switch Contributors",
-    "version": (1, 0, 2),
+    "version": (1, 1, 1),
     "blender": (4, 2, 0),
     "location": "3D Viewport > Sidebar > Item > Parent Switch",
     "description": "Create and switch between multiple Child Of constraints",

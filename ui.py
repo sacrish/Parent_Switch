@@ -118,6 +118,9 @@ class PARENTSWITCH_PT_switch(Panel):
             layout.label(text="No Child Of constraints", icon="INFO")
             return
 
+        settings = _settings(context)
+        layout.prop(settings, "keep_transform")
+
         for constraint in constraints:
             card = layout.box()
             title_row = card.row()

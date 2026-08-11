@@ -43,6 +43,11 @@ class PARENTSWITCH_PG_target(PropertyGroup):
 
 
 class PARENTSWITCH_PG_settings(PropertyGroup):
+    keep_transform: BoolProperty(
+        name="Keep Transform",
+        description="Preserve the visual transform when switching parents",
+        default=True,
+    )
     bones_only: BoolProperty(
         name="Bones Only",
         description="Use multiple bones from one armature as targets",

@@ -1,7 +1,7 @@
 schema_version = "1.0.0"
 
 id = "parent_switch"
-version = "1.0.2"
+version = "1.1.1"
 name = "Parent Switch"
 tagline = "Create and animate switches between Child Of constraints"
 maintainer = "Sacrish with Codex"
