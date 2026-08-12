@@ -4,6 +4,8 @@ Parent Switch is a Blender add-on for creating several disabled **Child Of**
 constraints on an object or pose bone, then switching and keying those parents
 from one compact panel.
 
+Quick demo video: [https://youtu.be/6A2W2VCB87I](https://youtu.be/6A2W2VCB87I)
+
 ## Highlights
 
 - Set up several object or bone parents once, then reuse them throughout an animation.
