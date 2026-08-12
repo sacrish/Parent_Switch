@@ -193,25 +193,29 @@ def restore_visual_transform(context, owner, world_matrix, *, tolerance=1.0e-5):
         raise RuntimeError("Unable to preserve the visual transform with the current constraint stack")
 
 
+def owner_transform_data_paths(owner):
+    rotation_path = {
+        "QUATERNION": "rotation_quaternion",
+        "AXIS_ANGLE": "rotation_axis_angle",
+    }.get(owner.rotation_mode, "rotation_euler")
+    return [
+        owner.path_from_id(property_name)
+        for property_name in ("location", rotation_path, "scale")
+    ]
+
+
 def keyframe_owner_transform(owner, frame):
     id_owner = getattr(owner, "id_data", None)
     if id_owner is None or not hasattr(id_owner, "keyframe_insert"):
         raise TypeError("The active owner cannot store transform animation data")
 
-    rotation_path = {
-        "QUATERNION": "rotation_quaternion",
-        "AXIS_ANGLE": "rotation_axis_angle",
-    }.get(owner.rotation_mode, "rotation_euler")
-
-    data_paths = []
-    for property_name in ("location", rotation_path, "scale"):
-        data_path = owner.path_from_id(property_name)
+    data_paths = owner_transform_data_paths(owner)
+    for data_path in data_paths:
         id_owner.keyframe_insert(
             data_path=data_path,
             frame=frame,
             group="Parent Switch",
         )
-        data_paths.append(data_path)
     return data_paths
 
 
@@ -253,29 +257,71 @@ def set_key_interpolation(id_owner, data_paths, frame, interpolation="CONSTANT")
                 keyframe_point.interpolation = interpolation
 
 
+def capture_outgoing_interpolation(id_owner, data_paths, frame):
+    """Capture the interpolation of each curve segment containing frame."""
+    paths = set(data_paths)
+    interpolation = {}
+    for fcurve in _action_fcurves(id_owner):
+        if fcurve.data_path not in paths:
+            continue
+
+        source = None
+        for keyframe_point in fcurve.keyframe_points:
+            if keyframe_point.co.x <= frame + 1.0e-4:
+                source = keyframe_point
+            else:
+                break
+        if source is not None:
+            interpolation[(fcurve.data_path, fcurve.array_index)] = (
+                source.interpolation
+            )
+    return interpolation
+
+
+def restore_outgoing_interpolation(
+    id_owner,
+    data_paths,
+    frame,
+    interpolation,
+    *,
+    default,
+):
+    """Set switch-frame keys to their former curve or Blender default mode."""
+    paths = set(data_paths)
+    for fcurve in _action_fcurves(id_owner):
+        if fcurve.data_path not in paths:
+            continue
+        curve_interpolation = interpolation.get(
+            (fcurve.data_path, fcurve.array_index),
+            default,
+        )
+        for keyframe_point in fcurve.keyframe_points:
+            if abs(keyframe_point.co.x - frame) <= 1.0e-4:
+                keyframe_point.interpolation = curve_interpolation
+
+
 def insert_guard_keys(context, owner, constraints, frame, *, key_transform):
     """Key the old space one frame before a switch.
 
-    Constant outgoing interpolation prevents the new-space local transform at
-    the switch frame from being interpolated backward into the old space.
+    Interpolation is applied only after the switch-frame keys are inserted.
+    This prevents Blender from inheriting CONSTANT from the guard key when it
+    creates a new key at the switch frame.
     """
     guard_frame = frame - 1
-    id_owner = owner.id_data
 
     constraint_paths = [
         keyframe_constraint_enabled(owner, constraint, guard_frame)
         for constraint in constraints
     ]
-    set_key_interpolation(id_owner, constraint_paths, guard_frame)
 
     if not key_transform:
-        return
+        return constraint_paths
 
     scene = context.scene
     scene.frame_set(guard_frame)
     transform_paths = keyframe_owner_transform(owner, guard_frame)
-    set_key_interpolation(id_owner, transform_paths, guard_frame)
     scene.frame_set(frame)
+    return constraint_paths + transform_paths
 
 
 def switch_child_of(
@@ -299,11 +345,22 @@ def switch_child_of(
     visual_matrix = evaluated_world_matrix(context, owner) if keep_transform else None
     previous_states = [(constraint, constraint.enabled) for constraint in constraints]
 
+    transform_paths = []
+    switch_interpolation = {}
+    if keyframe and keep_transform:
+        transform_paths = owner_transform_data_paths(owner)
+        switch_interpolation = capture_outgoing_interpolation(
+            owner.id_data,
+            transform_paths,
+            frame,
+        )
+
     insert_guard = keyframe and not (
         skip_guard_at_scene_start and frame <= context.scene.frame_start
     )
+    guard_paths = []
     if insert_guard:
-        insert_guard_keys(
+        guard_paths = insert_guard_keys(
             context,
             owner,
             constraints,
@@ -327,7 +384,25 @@ def switch_child_of(
         for constraint in constraints:
             keyframe_constraint_enabled(owner, constraint, frame)
         if visual_matrix is not None:
-            keyframe_owner_transform(owner, frame)
+            transform_paths = keyframe_owner_transform(owner, frame)
+            restore_outgoing_interpolation(
+                owner.id_data,
+                transform_paths,
+                frame,
+                switch_interpolation,
+                default=getattr(
+                    context.preferences.edit,
+                    "keyframe_new_interpolation_type",
+                    "BEZIER",
+                ),
+            )
+
+        # A keyframe's interpolation controls the segment that follows it.
+        # Apply CONSTANT only after inserting the switch-frame keys, and only
+        # to F-1, so F-1 -> F is held while F and later segments keep their
+        # existing/default interpolation.
+        if insert_guard:
+            set_key_interpolation(owner.id_data, guard_paths, frame - 1)
     return selected
 
 
