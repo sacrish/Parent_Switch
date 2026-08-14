@@ -2,7 +2,7 @@
 
 bl_info = {
     "name": "Parent Switch",
-    "author": "Parent Switch Contributors",
+    "author": "Zakrich",
     "version": (1, 1, 3),
     "blender": (4, 2, 0),
     "location": "3D Viewport > Sidebar > Item > Parent Switch",
